@@ -204,7 +204,7 @@ router.route('/users')
               "data" : user
             }
                      }
-                      res.json(resp);
+                      res.status(201).json(resp);
                 });
 
           }else{
@@ -353,7 +353,13 @@ router.route('/users/:id')
             if (err)
                 res.status(404).send(err);
             else{
-                 res.json({ "message": "User deleted", "data":[] });
+
+                 if(user != 0){
+                      res.json({ "message": "User deleted", "data":[] });
+                 }else{
+                      res.status(404).json({ "message": "User not found", "data":[] });
+                 }
+                     
 
             }
 
@@ -475,7 +481,7 @@ router.route('/tasks')
                 "message": "Task added",
                 "data" : task
               }
-              res.json(resp)
+              res.status(201).json(resp)
             }
           
         });
@@ -485,7 +491,7 @@ router.route('/tasks')
  
     .options(function(req, res) {
             res.writeHead(200);
-     		res.end();
+     		    res.end();
     });
 
 
@@ -621,11 +627,11 @@ router.route('/tasks/:id')
 
         Task.remove({
             _id: req.params.id
-        }, function(err, user) {
-            if (err)
-                res.status(404).send(err);
+        }, function(err, task) {
+            if (err || user ==  0)
+                res.status(404).send({ "message": "Task not found.", "data":[] });
             else{
-                 res.json({ "message": "Task deleted", "data":[] });
+                 res.json({ "message": "Task deleted", "data":task });
 
             }
 
