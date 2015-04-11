@@ -94,7 +94,7 @@ router.route('/users')
     				q = q.limit(req.query[x])
     			break;
     			case 'count':
-    				count = true;
+    				count = req.query[x];
     			break;
     		}
 
@@ -102,11 +102,23 @@ router.route('/users')
 
     	q.exec(function(err, user) {
    			if (err) 
-   				res.send(err)
-   			if (count)
-   				res.json(user.length)
-   			else
-   				res.json(user)
+   				res.status(404).send(err)
+   			if (count == 'true' || count == true){
+            var resp = {
+              "message" : "OK",
+              "data" : user.length
+            }
+            res.json(resp)
+        }
+   			else{
+          var resp = {
+              "message" : "OK",
+              "data" : user
+            }
+
+          res.json(resp)
+        }
+   				
 		});
 
     	
@@ -115,33 +127,98 @@ router.route('/users')
 
       .post(function(req, res) {
 
-      	var user;
+      if(req.body.name == undefined && req.body.email == undefined || req.body.name == "" && req.body.email == "" ){
 
-      	//user = new User({name:req.body.name, email:req.body.email, pendingTasks:req.body.pendingTasks});   
+                var resp = {
+                "message": "Validation Error: A name is required! An email is required! ",
+                "data" : []
+              }
+              res.status(500).json(resp)
 
-      	user = new User()
+              return
 
-      	if(req.body.name != undefined)
-      		user.name = req.body.name;
-      	if(req.body.email != undefined)
-      		user.email = req.body.email;
-      	if(req.body.pendingTasks != undefined && typeof(req.body.pendingTasks) == 'arraystring')
-      		user.pendingTasks = req.body.pendingTasks;
+          }
+          if(req.body.name == undefined || req.body.name =="" ){
 
-      	console.log("pending tasks array"+ typeof(req.body.pendingTasks));
-      	console.log(user);
-      
+                var resp = {
+                "message": "Validation Error: A name is required! ",
+                "data" : []
+              }
+              res.status(500).json(resp)
 
-      	user.save(function(err) {
-            if (err){
-                 res.send(err)
-                 console.log("error occur");
-             }
-             else
-            	res.json(user);
-        });
+              return
 
-     
+          }
+
+          if(req.body.email == undefined || req.body.email ==""){
+
+                var resp = {
+                "message": "Validation Error: An email is required! ",
+                "data" : []
+              }
+              res.status(500).json(resp)
+
+              return
+
+          }
+
+        console.log("post ")
+
+        User.findOne({ email : req.body.email}, function(err, item){
+
+          console.log("inside findOne ")
+          if (err){
+            console.log("inside findOne find error")
+
+             res.send(err)
+          }
+
+          if (!item) {
+                    console.log("no matching email")
+                    var user;
+
+                //user = new User({name:req.body.name, email:req.body.email, pendingTasks:req.body.pendingTasks});   
+
+                user = new User()
+
+                if(req.body.name != undefined)
+                  user.name = req.body.name;
+                if(req.body.email != undefined)
+                  user.email = req.body.email;
+                if(req.body.pendingTasks != undefined && typeof(req.body.pendingTasks) == 'arraystring')
+                  user.pendingTasks = req.body.pendingTasks;
+
+                console.log("pending tasks array"+ typeof(req.body.pendingTasks));
+                console.log(user);
+              
+
+                user.save(function(err) {
+                    if (err){
+                         res.send(err)
+                         console.log("error occur");
+                     }
+                     else{
+                      console.log("send saved data")
+                                      var resp = {
+              "message" : "User added",
+              "data" : user
+            }
+                     }
+                      res.json(resp);
+                });
+
+          }else{
+              var resp = {
+              "message" : "This email already exists",
+              "data" : []
+            }
+
+            res.status(500).json(resp);
+
+          }
+
+        })
+
     })
 
  
@@ -157,26 +234,101 @@ router.route('/users/:id')
     .get(function(req, res) {
     	console.log("paras id is " + req.params.id);
 
+      if (!req.params.id.match(/^[0-9a-fA-F]{24}$/)) {
+          var resp = {
+            "message": "User not found",
+            "data" : []
+          }
+          res.status(404).json(resp)
+          return;
+      }
+
     	User.findById(req.params.id, function(err, user){
-    		if(err)
-    			res.send(err)
-    		res.json(user)
+    		if(err){
+          console.log("error occurs" + err);
+          res.status(404).send(err)
+        }
+        console.log(user)
+        if(user != undefined){
+          var resp = {
+            "message": "OK",
+            "data" : user
+          }
+      		res.json(resp)
+        }else{
+            var resp = {
+            "message": "User not found",
+            "data" : []
+          }
+          res.status(404).json(resp)
+        }
     	});
  
     })
 
       .put(function(req, res) {
+
+         if (!req.params.id.match(/^[0-9a-fA-F]{24}$/)) {
+          var resp = {
+            "message": "User not found",
+            "data" : []
+          }
+          res.status(404).json(resp)
+          return;
+        }
       	User.findById(req.params.id, function(err, user){
       		if (err) 
       			res.send(err)
+          if(req.body.name == undefined && req.body.email == undefined || req.body.name == "" && req.body.email == "" ){
+
+                var resp = {
+                "message": "Validation Error: A name is required! An email is required! ",
+                "data" : []
+              }
+              res.status(500).json(resp)
+
+              return
+
+          }
+          if(req.body.name == undefined || req.body.name =="" ){
+
+                var resp = {
+                "message": "Validation Error: A name is required! ",
+                "data" : []
+              }
+              res.status(500).json(resp)
+
+              return
+
+          }
+
+          if(req.body.email == undefined || req.body.email ==""){
+
+                var resp = {
+                "message": "Validation Error: An email is required! ",
+                "data" : []
+              }
+              res.status(500).json(resp)
+
+              return
+
+          }
+
       		user.name = req.body.name;
       		user.email = req.body.email;
-      		user.pendingTasks = req.body.email == undefined ? [] : req.body.email
+      		user.pendingTasks = req.body.pendingTasks == undefined ? [] : req.body.pendingTasks
 
       		user.save(function(err){
       			if(err)
-      				res.send(err)
-      			res.json(user);
+      				res.status(404).send(err);
+            else{
+               var resp = {
+                "message": "Validation Error: An email is required! ",
+                "data" : user              }
+
+              res.json(resp);
+            }
+      			 
 
       		})
 
@@ -186,13 +338,26 @@ router.route('/users/:id')
 
  
     .delete(function(req, res) {
+       if (!req.params.id.match(/^[0-9a-fA-F]{24}$/)) {
+          var resp = {
+            "message": "User not found",
+            "data" : []
+          }
+          res.status(404).json(resp)
+          return;
+      }
+
         User.remove({
             _id: req.params.id
         }, function(err, user) {
             if (err)
-                res.send(err);
+                res.status(404).send(err);
+            else{
+                 res.json({ "message": "User deleted", "data":[] });
 
-            res.json({ message: 'Successfully deleted' });
+            }
+
+           
         });
     });
 
@@ -225,7 +390,7 @@ router.route('/tasks')
     				q = q.limit(req.query[x])
     			break;
     			case 'count':
-    				count = true;
+    				count = req.query[x];
     			break;
     		}
 
@@ -233,16 +398,64 @@ router.route('/tasks')
 
     	q.exec(function(err, task) {
    			if (err) 
-   				res.send(err)
-   			if (count)
-   				res.json(task.length)
-   			else
-   				res.json(task)
+   				res.status(404).send(err)
+   			if (count){
+          var resp = {
+              "message" : "OK",
+              "data" : task.length
+            }
+            res.json(resp)
+   	    }
+   			else{
+
+            var resp = {
+              "message" : "OK",
+              "data" : task
+            }
+            res.json(resp)
+
+        }
+
 		});
    
     })
 
-      .put(function(req, res) {
+      .post(function(req, res) {
+
+                if((req.body.name == undefined || req.body.name == "") && (req.body.deadline == undefined ||  req.body.deadline == "")){
+
+                var resp = {
+                "message": "Validation Error: A name is required! An deadline is required! ",
+                "data" : []
+              }
+              res.status(500).json(resp)
+
+              return
+
+          }
+          if(req.body.name == undefined || req.body.name =="" ){
+
+                var resp = {
+                "message": "Validation Error: A name is required! ",
+                "data" : []
+              }
+              res.status(500).json(resp)
+
+              return
+
+          }
+
+          if(req.body.deadline == undefined || req.body.deadline ==""){
+
+                var resp = {
+                "message": "Validation Error: An deadline is required! ",
+                "data" : []
+              }
+              res.status(500).json(resp)
+
+              return
+
+          }
 
       	var task = new Task({name:req.body.name, 
       		description:req.body.description, 
@@ -256,9 +469,15 @@ router.route('/tasks')
 
       	task.save(function(err) {
             if (err)
-                res.send(err);
-
-            res.json(task);
+                res.status(500).send(err);
+            else{
+               var resp = {
+                "message": "Task added",
+                "data" : task
+              }
+              res.json(resp)
+            }
+          
         });
   
     })
@@ -272,19 +491,89 @@ router.route('/tasks')
 
 //tasks route
 router.route('/tasks/:id')
+  
 
   
     .get(function(req, res) {
+            if (!req.params.id.match(/^[0-9a-fA-F]{24}$/)) {
+          var resp = {
+            "message": "Task not found",
+            "data" : []
+          }
+          res.status(404).json(resp)
+          return;
+        }
+
       	Task.findById(req.params.id, function(err, task){
       		if (err) 
-      			res.send(err)
-      		res.json(task);
+      			res.status(500).send(err)
+          else{
+              if(task != undefined){
+          var resp = {
+            "message": "OK",
+            "data" : task
+          }
+          res.json(resp)
+        }else{
+            var resp = {
+            "message": "Task not found.",
+            "data" : []
+          }
+          res.status(404).json(resp)
+        }
+          }
+
+      
 
       	})
 
     })
 
       .put(function(req, res) {
+
+               if((req.body.name == undefined || req.body.name == "") && (req.body.deadline == undefined || req.body.deadline == "")) {
+
+                var resp = {
+                "message": "Validation Error: A name is required! An deadline is required! ",
+                "data" : []
+              }
+              res.status(500).json(resp)
+
+              return
+
+          }
+          if(req.body.name == undefined || req.body.name =="" ){
+
+                var resp = {
+                "message": "Validation Error: A name is required! ",
+                "data" : []
+              }
+              res.status(500).json(resp)
+
+              return
+
+          }
+
+          if(req.body.deadline == undefined || req.body.deadline ==""){
+
+                var resp = {
+                "message": "Validation Error: An deadline is required! ",
+                "data" : []
+              }
+              res.status(500).json(resp)
+
+              return
+
+          }
+
+          if (!req.params.id.match(/^[0-9a-fA-F]{24}$/)) {
+          var resp = {
+            "message": "Task not found",
+            "data" : []
+          }
+          res.status(404).json(resp)
+          return;
+        }
 
 
       	    Task.findById(req.params.id, function(err, task){
@@ -300,8 +589,16 @@ router.route('/tasks/:id')
 
       		task.save(function(err){
       			if(err)
-      				res.send(err)
-      			res.json(task);
+      				res.status(500).send(err)
+            else{
+                  var resp = {
+                  "message": "Task updated",
+                  "data" : []
+                }
+                res.json(resp)
+
+            }
+      			
 
       		})
 
@@ -313,13 +610,26 @@ router.route('/tasks/:id')
 
  
     .delete(function(req, res) {
+      if (!req.params.id.match(/^[0-9a-fA-F]{24}$/)) {
+          var resp = {
+            "message": "Task not found.",
+            "data" : []
+          }
+          res.status(404).json(resp)
+          return;
+      }
+
         Task.remove({
             _id: req.params.id
         }, function(err, user) {
             if (err)
-                res.send(err);
+                res.status(404).send(err);
+            else{
+                 res.json({ "message": "Task deleted", "data":[] });
 
-            res.json({ message: 'Successfully deleted' });
+            }
+
+           
         });
     });
 
